@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { isApiConflictError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
 
-import { FormPane, SectionRail } from '@/components/config-layout';
+import { ConfigLayout, FormPane, SectionRail } from '@/components/config-layout';
 import { RawEditorSection } from '@/components/copilot/config-form/raw-editor-section';
 import type { CursorStatus, CursorConfig, CursorProbeResult } from '@/hooks/use-cursor';
 

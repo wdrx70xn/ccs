@@ -322,6 +322,7 @@ export function CopilotPage() {
   return (
     <PageShell>
       <ConfigLayout
+        storageKey="config-layout.copilot"
         left={<CopilotStatusRail />}
         // CopilotConfigForm manages its own internal scroll + header + split
         // layout. Do NOT wrap it in FormPane (which adds its own ScrollArea +

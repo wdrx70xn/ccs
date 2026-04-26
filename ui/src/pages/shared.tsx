@@ -126,6 +126,7 @@ export function SharedPage() {
         storageKey="config-layout.shared"
         left={
           <SharedItemList
+            tabId={tab}
             header={
               <div className="space-y-4">
                 <div>

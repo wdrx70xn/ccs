@@ -7,6 +7,7 @@
  * All demo data is anonymized (Provider A/B/C, fake metrics) so screenshots are
  * safe to publish in PRs without enabling Privacy mode.
  */
+import { useState } from 'react';
 import {
   Activity,
   Bot,

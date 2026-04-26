@@ -26,6 +26,8 @@ interface SharedItemListProps {
   onQueryChange: (q: string) => void;
   onSelectItem: (path: string) => void;
   onRetry: () => void;
+  /** Active tab id (commands | skills | agents) — used in i18n interpolation. */
+  tabId: string;
   header?: ReactNode;
 }
 
@@ -41,6 +43,7 @@ export function SharedItemList({
   onQueryChange,
   onSelectItem,
   onRetry,
+  tabId,
   header,
 }: SharedItemListProps) {
   const { t } = useTranslation();
