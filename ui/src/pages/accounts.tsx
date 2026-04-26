@@ -11,19 +11,15 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users } from 'lucide-react';
 import { PageShell } from '@/components/page-shell/page-shell';
-import { PageHeader } from '@/components/page-shell/page-header';
 import { ConfigLayout } from '@/components/config-layout/config-layout';
 import { AccountsActionRail } from '@/components/account/accounts-action-rail';
 import { AccountsWorkspace } from '@/components/account/accounts-workspace';
 import { AccountsMobileFallback } from '@/components/account/accounts-mobile-fallback';
 import { CreateAuthProfileDialog } from '@/components/account/create-auth-profile-dialog';
 import { useAccounts, useConfirmLegacyAccountPolicies } from '@/hooks/use-accounts';
-import { useTranslation } from 'react-i18next';
 
 export function AccountsPage() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data, isLoading } = useAccounts();
   const confirmLegacyMutation = useConfirmLegacyAccountPolicies();
@@ -96,22 +92,8 @@ export function AccountsPage() {
       {/* Desktop: 3-pane ConfigLayout inside PageShell */}
       <div className="hidden h-full min-h-0 lg:flex lg:flex-col">
         <PageShell>
-          <PageHeader
-            title={
-              <span className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                {t('accountsPage.title')}
-              </span>
-            }
-            description={
-              <>
-                {t('accountsPage.managePrefix')}
-                <code className="mx-1 rounded bg-muted px-1 py-0.5">ccs auth</code>
-                {t('accountsPage.manageSuffix')}
-              </>
-            }
-          />
           <ConfigLayout
+            storageKey="config-layout.accounts"
             left={<AccountsActionRail {...actionProps} />}
             form={<AccountsWorkspace {...workspaceProps} />}
           />

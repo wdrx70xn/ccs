@@ -24,6 +24,7 @@ import {
   FileJson,
   RefreshCw,
   Upload,
+  Server,
 } from 'lucide-react';
 import { OpenRouterBanner } from '@/components/profiles/openrouter-banner';
 import { OpenRouterPromoCard } from '@/components/profiles/openrouter-promo-card';
@@ -93,15 +94,13 @@ export function ApiProfileListPane({
 
   return (
     <div className="flex h-full flex-col">
-      {/* OpenRouter banner (only when profile list is empty) */}
-      {showBanner && <OpenRouterBanner onCreateClick={onCreateClick} />}
-
-      {/* Toolbar */}
-      <div className="shrink-0 border-b bg-background/80 p-3">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {t('apiProfiles.sidebarSubtitle')}
-          </p>
+      {/* Brand strip — replaces the global PageHeader */}
+      <div className="shrink-0 border-b bg-background p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Server className="size-5 text-primary" />
+            <h1 className="font-semibold">{t('apiProfiles.sidebarTitle')}</h1>
+          </div>
           <div className="flex shrink-0 items-center gap-1">
             <Button
               size="sm"
@@ -129,8 +128,16 @@ export function ApiProfileListPane({
             </Button>
           </div>
         </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {t('apiProfiles.sidebarSubtitle')}
+        </p>
+      </div>
 
-        {/* Search */}
+      {/* OpenRouter banner (only when profile list is empty) */}
+      {showBanner && <OpenRouterBanner onCreateClick={onCreateClick} />}
+
+      {/* Search */}
+      <div className="shrink-0 border-b bg-background/80 p-2">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input

@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { isApiConflictError } from '@/lib/api-client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+
 import { FormPane, SectionRail } from '@/components/config-layout';
 import { RawEditorSection } from '@/components/copilot/config-form/raw-editor-section';
 import type { CursorStatus, CursorConfig, CursorProbeResult } from '@/hooks/use-cursor';
@@ -31,13 +31,14 @@ import { ModelMappingSection } from './sections/model-mapping-section';
 import { RuntimeSettingsSection } from './sections/runtime-settings-section';
 import { InfoSection } from './sections/info-section';
 import { ManualAuthDialog } from './sections/manual-auth-dialog';
-import { StatusSidebar } from './sections/status-sidebar';
+import { StatusSection } from './sections/status-section';
 
 // ---------------------------------------------------------------------------
 // Section rail items
 // ---------------------------------------------------------------------------
 
 const SECTION_RAIL_ITEMS = [
+  { id: 'status', label: 'Status & Actions' },
   { id: 'presets', label: 'Presets' },
   { id: 'model-mapping', label: 'Model Mapping' },
   { id: 'runtime-settings', label: 'Settings' },
@@ -198,16 +199,6 @@ export function CursorForm({
   }, [models, effectiveModel]);
 
   const canStart = Boolean(status?.enabled && status?.authenticated && !status?.token_expired);
-
-  const integrationBadge = useMemo(
-    () =>
-      status?.enabled ? (
-        <Badge>{t('cursorPage.enabled')}</Badge>
-      ) : (
-        <Badge variant="secondary">{t('cursorPage.disabled')}</Badge>
-      ),
-    [status?.enabled, t]
-  );
 
   // -------------------------------------------------------------------------
   // Draft helpers
@@ -522,132 +513,114 @@ export function CursorForm({
 
   return (
     <>
-      {/* Status sidebar (left) */}
-      <StatusSidebar
-        status={status}
-        config={config}
-        statusLoading={statusLoading}
-        visibleProbeResult={visibleProbeResult ?? null}
-        integrationBadge={integrationBadge}
-        canStart={canStart}
-        isUpdatingConfig={isUpdatingConfig}
-        isAutoDetectingAuth={isAutoDetectingAuth}
-        isImportingManualAuth={isImportingManualAuth}
-        isRunningProbe={isRunningProbe}
-        isStartingDaemon={isStartingDaemon}
-        isStoppingDaemon={isStoppingDaemon}
-        onRefreshStatus={refetchStatus}
-        onToggleEnabled={handleToggleEnabled}
-        onAutoDetectAuth={handleAutoDetectAuth}
-        onOpenManualAuth={() => setManualAuthOpen(true)}
-        onRunProbe={handleRunProbe}
-        onStartDaemon={handleStartDaemon}
-        onStopDaemon={handleStopDaemon}
-      />
-
-      {/* Main content (right) */}
-      <div className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden">
-        {/* Page-level header bar */}
-        <div className="px-6 py-4 border-b bg-background flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">{t('cursorPage.configuration')}</h2>
-                {rawSettings && (
-                  <Badge variant="outline" className="text-xs">
-                    cursor.settings.json
-                  </Badge>
-                )}
+      <ConfigLayout
+        storageKey="config-layout.cursor"
+        left={
+          <SectionRail
+            header={
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <img
+                      src="/assets/sidebar/cursor.svg"
+                      alt=""
+                      className="w-5 h-5 object-contain shrink-0"
+                    />
+                    <h1 className="font-semibold">{t('cursorPage.title')}</h1>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t('cursorPage.subtitle')}</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={handleSaveAll}
+                    disabled={isUpdatingConfig || isSavingRawSettings || !hasChanges || !canSave}
+                  >
+                    {isUpdatingConfig || isSavingRawSettings ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    {t('cursorPage.save')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={handleHeaderRefresh}
+                    disabled={statusLoading || rawSettingsLoading}
+                  >
+                    <RefreshCw
+                      className={cn(
+                        'w-4 h-4',
+                        (statusLoading || rawSettingsLoading) && 'animate-spin'
+                      )}
+                    />
+                    {t('cursorPage.refreshConfiguration')}
+                  </Button>
+                </div>
               </div>
-              {rawSettings && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {t('cursorPage.lastModified')}{' '}
-                  {rawSettings.exists
-                    ? new Date(rawSettings.mtime).toLocaleString()
-                    : t('cursorPage.neverSaved')}
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleHeaderRefresh}
-              disabled={statusLoading || rawSettingsLoading}
-              aria-label={t('cursorPage.refreshConfiguration')}
-              title={t('cursorPage.refreshConfiguration')}
-            >
-              <RefreshCw
-                className={cn('w-4 h-4', (statusLoading || rawSettingsLoading) && 'animate-spin')}
-              />
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSaveAll}
-              disabled={isUpdatingConfig || isSavingRawSettings || !hasChanges || !canSave}
-            >
-              {isUpdatingConfig || isSavingRawSettings ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  {t('cursorPage.saving')}
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-1" />
-                  {t('cursorPage.save')}
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-
-        {/* 3-column: SectionRail | FormPane (540px) | JsonPane */}
-        <div className="flex-1 min-h-0 flex divide-x overflow-hidden">
-          {/* SectionRail — click-to-scroll anchor nav */}
-          <div className="w-[180px] shrink-0 border-r">
-            <SectionRail sections={SECTION_RAIL_ITEMS} />
-          </div>
-
-          {/* FormPane — scrollable form body */}
-          <div className="w-[540px] shrink-0 flex flex-col min-h-0 overflow-hidden">
-            <FormPane>
-              <PresetsSection
-                modelsLoading={modelsLoading}
-                hasModels={models.length > 0}
-                onApplyPreset={applyPreset}
-              />
-              <ModelMappingSection
-                models={orderedModels}
-                modelsLoading={modelsLoading}
-                effectiveModel={effectiveModel}
-                effectiveOpusModel={effectiveOpusModel}
-                effectiveSonnetModel={effectiveSonnetModel}
-                effectiveHaikuModel={effectiveHaikuModel}
-                onChangeModel={(v) => updateConfigDraft((d) => ({ ...d, model: v }))}
-                onChangeOpusModel={(v) => updateConfigDraft((d) => ({ ...d, opus_model: v }))}
-                onChangeSonnetModel={(v) => updateConfigDraft((d) => ({ ...d, sonnet_model: v }))}
-                onChangeHaikuModel={(v) => updateConfigDraft((d) => ({ ...d, haiku_model: v }))}
-              />
-              <RuntimeSettingsSection
-                effectivePort={effectivePort}
-                effectiveAutoStart={effectiveAutoStart}
-                effectiveGhostMode={effectiveGhostMode}
-                onChangePort={(v) => updateConfigDraft((d) => ({ ...d, port: v }))}
-                onChangeAutoStart={(v) => updateConfigDraft((d) => ({ ...d, auto_start: v }))}
-                onChangeGhostMode={(v) => updateConfigDraft((d) => ({ ...d, ghost_mode: v }))}
-              />
-              <InfoSection
-                rawSettingsPath={rawSettings?.path}
-                models={models}
-                modelsLoading={modelsLoading}
-                currentModel={currentModel}
-              />
-            </FormPane>
-          </div>
-
-          {/* JSON / raw settings pane */}
-          <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+            }
+            sections={SECTION_RAIL_ITEMS}
+          />
+        }
+        form={
+          <FormPane>
+            <StatusSection
+              status={status}
+              config={config}
+              visibleProbeResult={visibleProbeResult ?? null}
+              canStart={canStart}
+              isUpdatingConfig={isUpdatingConfig}
+              isAutoDetectingAuth={isAutoDetectingAuth}
+              isImportingManualAuth={isImportingManualAuth}
+              isRunningProbe={isRunningProbe}
+              isStartingDaemon={isStartingDaemon}
+              isStoppingDaemon={isStoppingDaemon}
+              onToggleEnabled={handleToggleEnabled}
+              onAutoDetectAuth={handleAutoDetectAuth}
+              onOpenManualAuth={() => setManualAuthOpen(true)}
+              onRunProbe={handleRunProbe}
+              onStartDaemon={handleStartDaemon}
+              onStopDaemon={handleStopDaemon}
+            />
+            <PresetsSection
+              modelsLoading={modelsLoading}
+              hasModels={models.length > 0}
+              onApplyPreset={applyPreset}
+            />
+            <ModelMappingSection
+              models={orderedModels}
+              modelsLoading={modelsLoading}
+              effectiveModel={effectiveModel}
+              effectiveOpusModel={effectiveOpusModel}
+              effectiveSonnetModel={effectiveSonnetModel}
+              effectiveHaikuModel={effectiveHaikuModel}
+              onChangeModel={(v) => updateConfigDraft((d) => ({ ...d, model: v }))}
+              onChangeOpusModel={(v) => updateConfigDraft((d) => ({ ...d, opus_model: v }))}
+              onChangeSonnetModel={(v) => updateConfigDraft((d) => ({ ...d, sonnet_model: v }))}
+              onChangeHaikuModel={(v) => updateConfigDraft((d) => ({ ...d, haiku_model: v }))}
+            />
+            <RuntimeSettingsSection
+              effectivePort={effectivePort}
+              effectiveAutoStart={effectiveAutoStart}
+              effectiveGhostMode={effectiveGhostMode}
+              onChangePort={(v) => updateConfigDraft((d) => ({ ...d, port: v }))}
+              onChangeAutoStart={(v) => updateConfigDraft((d) => ({ ...d, auto_start: v }))}
+              onChangeGhostMode={(v) => updateConfigDraft((d) => ({ ...d, ghost_mode: v }))}
+            />
+            <InfoSection
+              rawSettingsPath={rawSettings?.path}
+              models={models}
+              modelsLoading={modelsLoading}
+              currentModel={currentModel}
+            />
+          </FormPane>
+        }
+        json={
+          <>
             <div className="px-6 py-2 bg-muted/30 border-b flex items-center gap-2 shrink-0 h-[45px]">
               <Code2 className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm font-medium text-muted-foreground">
@@ -664,9 +637,9 @@ export function CursorForm({
                 setRawConfigText(value);
               }}
             />
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Manual auth dialog */}
       <ManualAuthDialog

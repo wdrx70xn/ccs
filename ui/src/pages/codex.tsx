@@ -19,7 +19,7 @@ import {
   readCodexTopLevelSettings,
 } from '@/lib/codex-config';
 import { safeParseTomlObject } from '@shared/toml-object';
-import { PageShell, PageHeader } from '@/components/page-shell';
+import { PageShell } from '@/components/page-shell';
 import {
   ConfigLayout,
   SectionRail,
@@ -233,30 +233,42 @@ export function CodexPage() {
 
   return (
     <PageShell>
-      <PageHeader
-        title={/* TODO i18n: missing key for "Codex" page title */ 'Codex'}
-        description={
-          /* TODO i18n: missing key for codex page description */ 'Configure and manage your Codex CLI integration'
-        }
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refreshAll}
-            disabled={diagnosticsLoading || rawConfigLoading}
-            aria-label={/* TODO i18n: missing key for "Refresh Codex" */ 'Refresh Codex'}
-          >
-            <RefreshCw
-              className={
-                diagnosticsLoading || rawConfigLoading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'
-              }
-            />
-            {/* TODO i18n: missing key for "Refresh" */ 'Refresh'}
-          </Button>
-        }
-      />
       <ConfigLayout
-        left={<SectionRail sections={CODEX_SECTIONS} />}
+        storageKey="config-layout.codex"
+        left={
+          <SectionRail
+            header={
+              <div className="space-y-3">
+                <div>
+                  <h1 className="font-semibold">
+                    {/* TODO i18n: missing key for "Codex" page title */ 'Codex'}
+                  </h1>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {
+                      /* TODO i18n: missing key for codex page description */ 'Configure and manage your Codex CLI integration'
+                    }
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2"
+                  onClick={refreshAll}
+                  disabled={diagnosticsLoading || rawConfigLoading}
+                  aria-label={/* TODO i18n: missing key for "Refresh Codex" */ 'Refresh Codex'}
+                >
+                  <RefreshCw
+                    className={
+                      diagnosticsLoading || rawConfigLoading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'
+                    }
+                  />
+                  {/* TODO i18n: missing key for "Refresh" */ 'Refresh'}
+                </Button>
+              </div>
+            }
+            sections={CODEX_SECTIONS}
+          />
+        }
         form={<FormPane>{renderFormBody()}</FormPane>}
         json={
           <RawConfigEditorPanel

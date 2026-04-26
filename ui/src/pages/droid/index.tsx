@@ -15,7 +15,6 @@ import { useTranslation } from 'react-i18next';
 import { useDroid } from '@/hooks/use-droid';
 import { isApiConflictError } from '@/lib/api-client';
 import { PageShell } from '@/components/page-shell';
-import { PageHeader } from '@/components/page-shell';
 import { ConfigLayout, SectionRail, type SectionRailItem } from '@/components/config-layout';
 import { RawJsonSettingsEditorPanel } from '@/components/compatible-cli/raw-json-settings-editor-panel';
 import { DroidForm } from './droid-form';
@@ -124,9 +123,19 @@ export function DroidPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Factory Droid" description={t('droidPage.settingsTitle')} />
       <ConfigLayout
-        left={<SectionRail sections={DROID_SECTIONS} />}
+        storageKey="config-layout.droid"
+        left={
+          <SectionRail
+            header={
+              <div>
+                <h1 className="font-semibold">Factory Droid</h1>
+                <p className="mt-1 text-xs text-muted-foreground">{t('droidPage.settingsTitle')}</p>
+              </div>
+            }
+            sections={DROID_SECTIONS}
+          />
+        }
         form={
           <DroidForm
             diagnostics={diagnostics}

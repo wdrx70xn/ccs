@@ -25,6 +25,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageShell } from '@/components/page-shell/page-shell';
+import { ConfigLayout } from '@/components/config-layout/config-layout';
 import {
   useCliproxyAiProviders,
   useCreateCliproxyAiProviderEntry,
@@ -66,10 +68,12 @@ export function CliproxyAiProvidersPage() {
   // -------------------------------------------------------------------------
   if (isLoading) {
     return (
-      <div className="flex h-full min-h-0 overflow-hidden">
-        <Skeleton className="h-full w-80 rounded-none" />
-        <Skeleton className="h-full flex-1 rounded-none" />
-      </div>
+      <PageShell>
+        <div className="flex h-full min-h-0 overflow-hidden">
+          <Skeleton className="h-full w-[260px] rounded-none" />
+          <Skeleton className="h-full flex-1 rounded-none" />
+        </div>
+      </PageShell>
     );
   }
 
@@ -83,35 +87,37 @@ export function CliproxyAiProvidersPage() {
         : 'Failed to load CLIProxy AI providers. Check the local server and try again.';
 
     return (
-      <div className="flex h-full min-h-0 items-center justify-center bg-muted/10 p-6">
-        <div className="w-full max-w-2xl rounded-xl border bg-card p-6 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-destructive/10">
-              <AlertCircle className="h-5 w-5 text-destructive" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-lg font-semibold">{t('aiProvidersPage.unableToLoad')}</div>
-              <div className="mt-2 text-sm text-muted-foreground">{message}</div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button type="button" onClick={() => void refetch()}>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Retry
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate('/cliproxy/control-panel')}
-                >
-                  Control Panel
-                </Button>
-                <Button type="button" variant="outline" onClick={() => navigate('/providers')}>
-                  API Profiles
-                </Button>
+      <PageShell>
+        <div className="flex h-full min-h-0 items-center justify-center bg-muted/10 p-6">
+          <div className="w-full max-w-2xl rounded-xl border bg-card p-6 shadow-sm">
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-destructive/10">
+                <AlertCircle className="h-5 w-5 text-destructive" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-lg font-semibold">{t('aiProvidersPage.unableToLoad')}</div>
+                <div className="mt-2 text-sm text-muted-foreground">{message}</div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button type="button" onClick={() => void refetch()}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Retry
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate('/cliproxy/control-panel')}
+                  >
+                    Control Panel
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => navigate('/providers')}>
+                    API Profiles
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
@@ -164,267 +170,270 @@ export function CliproxyAiProvidersPage() {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <div className="flex h-full min-h-0 overflow-hidden">
-      {/* ------------------------------------------------------------------ */}
-      {/* Left rail — rail-anchored identity (§1b)                           */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="flex w-80 flex-col border-r bg-muted/30">
-        {/* Brand strip */}
-        <div className="border-b bg-background p-4">
-          <div className="mb-1 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-primary" />
-              <h1 className="font-semibold">CLIProxy Plus</h1>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              type="button"
-              onClick={() => void refetch()}
-              disabled={isFetching}
-            >
-              <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
-            </Button>
-          </div>
-          <p className="mb-3 text-xs text-muted-foreground">AI Providers</p>
-
-          {/* Primary CTA — context-sensitive label */}
-          <Button
-            variant="default"
-            size="sm"
-            className="w-full gap-2"
-            type="button"
-            onClick={page.openCreateDialog}
-          >
-            <Plus className="h-4 w-4" />
-            {selectedFamilyState.supportsNamedEntries
-              ? 'Create Connector'
-              : `Add ${selectedFamilyState.displayName} Entry`}
-          </Button>
-        </div>
-
-        {/* FamilyRail */}
-        <ScrollArea className="flex-1">
-          <div className="p-2">
-            <div className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Provider Families
-            </div>
-            <FamilyRail
-              families={families}
-              selectedFamily={selectedFamily}
-              onSelect={page.handleFamilySelect}
-            />
-          </div>
-        </ScrollArea>
-
-        {/* ProxyStatusWidget */}
-        <div className="border-t p-3">
-          <ProxyStatusWidget />
-        </div>
-
-        {/* Footer summary */}
-        <div className="border-t bg-background p-3 text-xs text-muted-foreground">
-          <div className="flex items-center justify-between">
-            <span>{families.length} families</span>
-            <span className="flex items-center gap-1">
-              <Check className="h-3 w-3 text-emerald-600" />
-              {readyFamilies} ready
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ------------------------------------------------------------------ */}
-      {/* Main content area                                                   */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="flex min-w-0 flex-1 flex-col bg-background">
-        {/* Family header */}
-        <div className="shrink-0 border-b bg-background px-6 py-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <ProviderLogo
-                provider={getAiProviderFamilyVisual(selectedFamilyState.id)}
-                size="lg"
-              />
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-lg font-semibold">{selectedFamilyState.displayName}</h2>
-                  <Badge variant="secondary" className={statusBadge.className}>
-                    {statusBadge.label}
-                  </Badge>
-                  <Badge variant="outline" className="uppercase">
-                    {selectedFamilyState.authMode}
-                  </Badge>
-                  <Badge variant="outline" className="font-mono text-[11px]">
-                    {selectedFamilyState.routePath}
-                  </Badge>
+    <PageShell>
+      <ConfigLayout
+        storageKey="config-layout.cliproxy-ai-providers"
+        left={
+          <div className="flex h-full flex-col bg-muted/30">
+            {/* Brand strip */}
+            <div className="border-b bg-background p-4">
+              <div className="mb-1 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  <h1 className="font-semibold">CLIProxy Plus</h1>
                 </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {selectedFamilyState.description}
-                </p>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  type="button"
+                  onClick={() => void refetch()}
+                  disabled={isFetching}
+                >
+                  <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+                </Button>
               </div>
-            </div>
+              <p className="mb-3 text-xs text-muted-foreground">AI Providers</p>
 
-            <div className="flex flex-wrap items-center gap-2">
+              {/* Primary CTA — context-sensitive label */}
               <Button
-                type="button"
-                variant="ghost"
+                variant="default"
                 size="sm"
-                onClick={() => void refetch()}
-                disabled={isFetching}
-              >
-                <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
-              </Button>
-              <Button
+                className="w-full gap-2"
                 type="button"
-                variant="outline"
-                onClick={() => navigate('/cliproxy/control-panel')}
+                onClick={page.openCreateDialog}
               >
-                Control Panel
-              </Button>
-              <Button type="button" variant="outline" onClick={() => navigate('/providers')}>
-                API Profiles
-                <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                <Plus className="h-4 w-4" />
+                {selectedFamilyState.supportsNamedEntries
+                  ? 'Create Connector'
+                  : `Add ${selectedFamilyState.displayName} Entry`}
               </Button>
             </div>
-          </div>
-        </div>
 
-        {/* Entry list + inspector OR empty state */}
-        {hasEntries ? (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {/* Entry selector strip */}
-            <div className="shrink-0 border-b bg-muted/5 px-6 py-4">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  <ListFilter className="h-3 w-3" />
-                  {hasMultipleEntries ? 'Saved entries' : 'Saved entry'}
+            {/* FamilyRail */}
+            <ScrollArea className="flex-1">
+              <div className="p-2">
+                <div className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Provider Families
                 </div>
+                <FamilyRail
+                  families={families}
+                  selectedFamily={selectedFamily}
+                  onSelect={page.handleFamilySelect}
+                />
+              </div>
+            </ScrollArea>
+
+            {/* ProxyStatusWidget */}
+            <div className="border-t p-3">
+              <ProxyStatusWidget />
+            </div>
+
+            {/* Footer summary */}
+            <div className="border-t bg-background p-3 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between">
+                <span>{families.length} families</span>
+                <span className="flex items-center gap-1">
+                  <Check className="h-3 w-3 text-emerald-600" />
+                  {readyFamilies} ready
+                </span>
+              </div>
+            </div>
+          </div>
+        }
+        form={
+          <div className="flex h-full flex-col bg-background">
+            {/* Family header */}
+            <div className="shrink-0 border-b bg-background px-6 py-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <ProviderLogo
+                    provider={getAiProviderFamilyVisual(selectedFamilyState.id)}
+                    size="lg"
+                  />
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-lg font-semibold">{selectedFamilyState.displayName}</h2>
+                      <Badge variant="secondary" className={statusBadge.className}>
+                        {statusBadge.label}
+                      </Badge>
+                      <Badge variant="outline" className="uppercase">
+                        {selectedFamilyState.authMode}
+                      </Badge>
+                      <Badge variant="outline" className="font-mono text-[11px]">
+                        {selectedFamilyState.routePath}
+                      </Badge>
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {selectedFamilyState.description}
+                    </p>
+                  </div>
+                </div>
+
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline" className="text-[11px]">
-                    {selectedFamilyState.entries.length} entries
-                  </Badge>
-                  <Badge variant="outline" className="text-[11px]">
-                    {configuredEntries.length}/{selectedFamilyState.entries.length} secrets stored
-                  </Badge>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void refetch()}
+                    disabled={isFetching}
+                  >
+                    <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate('/cliproxy/control-panel')}
+                  >
+                    Control Panel
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => navigate('/providers')}>
+                    API Profiles
+                    <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
+            </div>
 
-              {/* Multi-entry card selector */}
-              {hasMultipleEntries ? (
-                <div className="flex flex-wrap gap-3">
-                  {selectedFamilyState.entries.map((entry) => (
-                    <button
-                      key={entry.id}
-                      type="button"
-                      onClick={() => page.setSelectedEntryId(entry.id)}
-                      className={cn(
-                        'min-w-[220px] max-w-[280px] flex-1 rounded-xl border bg-background px-4 py-3 text-left transition-colors',
-                        entry.id === effectiveSelectedEntryId
-                          ? 'border-primary/30 bg-primary/5 shadow-sm'
-                          : 'border-border/60 hover:bg-muted/50'
-                      )}
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="truncate text-sm font-medium">{entry.label}</div>
-                        <EntrySecretBadge configured={entry.secretConfigured} />
-                      </div>
-                      <div className="mt-2 truncate text-xs text-muted-foreground">
-                        {entry.baseUrl || selectedFamilyState.routePath}
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        <Badge variant="outline" className="text-[10px]">
-                          {getRoutingMode(entry)}
-                        </Badge>
-                        {entry.models.length > 0 ? (
-                          <Badge variant="outline" className="text-[10px]">
-                            {renderModelRuleSummary(
-                              entry.models.map((m) => ({
-                                name: m.name ?? '',
-                                alias: m.alias ?? '',
-                              }))
-                            )}
-                          </Badge>
-                        ) : null}
-                        <Badge variant="outline" className="text-[10px]">
-                          {entry.headers.length} hdr
-                        </Badge>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : selectedEntry ? (
-                /* Single-entry display card */
-                <div className="rounded-xl border bg-background px-4 py-3">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="truncate text-sm font-medium">{selectedEntry.label}</div>
-                        <EntrySecretBadge configured={selectedEntry.secretConfigured} />
-                      </div>
-                      <div className="mt-1 truncate text-xs text-muted-foreground">
-                        {selectedEntry.baseUrl || selectedFamilyState.routePath}
-                      </div>
+            {/* Entry list + inspector OR empty state */}
+            {hasEntries ? (
+              <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                {/* Entry selector strip */}
+                <div className="shrink-0 border-b bg-muted/5 px-6 py-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <ListFilter className="h-3 w-3" />
+                      {hasMultipleEntries ? 'Saved entries' : 'Saved entry'}
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      <Badge variant="outline" className="text-[10px]">
-                        {getRoutingMode(selectedEntry)}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="text-[11px]">
+                        {selectedFamilyState.entries.length} entries
                       </Badge>
-                      {selectedEntry.models.length > 0 ? (
-                        <Badge variant="outline" className="text-[10px]">
-                          {renderModelRuleSummary(
-                            selectedEntry.models.map((m) => ({
-                              name: m.name ?? '',
-                              alias: m.alias ?? '',
-                            }))
-                          )}
-                        </Badge>
-                      ) : null}
-                      <Badge variant="outline" className="text-[10px]">
-                        {selectedEntry.headers.length} hdr
+                      <Badge variant="outline" className="text-[11px]">
+                        {configuredEntries.length}/{selectedFamilyState.entries.length} secrets
+                        stored
                       </Badge>
                     </div>
                   </div>
-                </div>
-              ) : null}
-            </div>
 
-            {/* Entry inspector — keyed by entry id to force remount on selection change */}
-            {selectedEntry ? (
-              <AiProviderForm
-                key={selectedEntry.id}
-                family={selectedFamilyState}
-                entry={selectedEntry}
-                source={data.source}
-                isSaving={updateMutation.isPending}
-                onSave={async (payload) => {
-                  await updateMutation.mutateAsync({
-                    family: selectedFamily,
-                    entryId: selectedEntry.id,
-                    data: payload,
-                  });
-                  void refetch();
-                }}
-                onDelete={() => page.setDeleteEntry(selectedEntry)}
-              />
-            ) : null}
+                  {/* Multi-entry card selector */}
+                  {hasMultipleEntries ? (
+                    <div className="flex flex-wrap gap-3">
+                      {selectedFamilyState.entries.map((entry) => (
+                        <button
+                          key={entry.id}
+                          type="button"
+                          onClick={() => page.setSelectedEntryId(entry.id)}
+                          className={cn(
+                            'min-w-[220px] max-w-[280px] flex-1 rounded-xl border bg-background px-4 py-3 text-left transition-colors',
+                            entry.id === effectiveSelectedEntryId
+                              ? 'border-primary/30 bg-primary/5 shadow-sm'
+                              : 'border-border/60 hover:bg-muted/50'
+                          )}
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="truncate text-sm font-medium">{entry.label}</div>
+                            <EntrySecretBadge configured={entry.secretConfigured} />
+                          </div>
+                          <div className="mt-2 truncate text-xs text-muted-foreground">
+                            {entry.baseUrl || selectedFamilyState.routePath}
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            <Badge variant="outline" className="text-[10px]">
+                              {getRoutingMode(entry)}
+                            </Badge>
+                            {entry.models.length > 0 ? (
+                              <Badge variant="outline" className="text-[10px]">
+                                {renderModelRuleSummary(
+                                  entry.models.map((m) => ({
+                                    name: m.name ?? '',
+                                    alias: m.alias ?? '',
+                                  }))
+                                )}
+                              </Badge>
+                            ) : null}
+                            <Badge variant="outline" className="text-[10px]">
+                              {entry.headers.length} hdr
+                            </Badge>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : selectedEntry ? (
+                    /* Single-entry display card */
+                    <div className="rounded-xl border bg-background px-4 py-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div className="truncate text-sm font-medium">
+                              {selectedEntry.label}
+                            </div>
+                            <EntrySecretBadge configured={selectedEntry.secretConfigured} />
+                          </div>
+                          <div className="mt-1 truncate text-xs text-muted-foreground">
+                            {selectedEntry.baseUrl || selectedFamilyState.routePath}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <Badge variant="outline" className="text-[10px]">
+                            {getRoutingMode(selectedEntry)}
+                          </Badge>
+                          {selectedEntry.models.length > 0 ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              {renderModelRuleSummary(
+                                selectedEntry.models.map((m) => ({
+                                  name: m.name ?? '',
+                                  alias: m.alias ?? '',
+                                }))
+                              )}
+                            </Badge>
+                          ) : null}
+                          <Badge variant="outline" className="text-[10px]">
+                            {selectedEntry.headers.length} hdr
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Entry inspector — keyed by entry id to force remount on selection change */}
+                {selectedEntry ? (
+                  <AiProviderForm
+                    key={selectedEntry.id}
+                    family={selectedFamilyState}
+                    entry={selectedEntry}
+                    source={data.source}
+                    isSaving={updateMutation.isPending}
+                    onSave={async (payload) => {
+                      await updateMutation.mutateAsync({
+                        family: selectedFamily,
+                        entryId: selectedEntry.id,
+                        data: payload,
+                      });
+                      void refetch();
+                    }}
+                    onDelete={() => page.setDeleteEntry(selectedEntry)}
+                  />
+                ) : null}
+              </div>
+            ) : (
+              /* Empty state */
+              <ScrollArea className="flex-1">
+                <div className="space-y-6 p-6">
+                  {setupStatusCard}
+                  <ProviderEmptyState
+                    family={selectedFamilyState}
+                    onAddEntry={page.openCreateDialog}
+                    onOpenControlPanel={() => navigate('/cliproxy/control-panel')}
+                    onOpenProfiles={() => navigate('/providers')}
+                  />
+                </div>
+              </ScrollArea>
+            )}
           </div>
-        ) : (
-          /* Empty state */
-          <ScrollArea className="flex-1">
-            <div className="space-y-6 p-6">
-              {setupStatusCard}
-              <ProviderEmptyState
-                family={selectedFamilyState}
-                onAddEntry={page.openCreateDialog}
-                onOpenControlPanel={() => navigate('/cliproxy/control-panel')}
-                onOpenProfiles={() => navigate('/providers')}
-              />
-            </div>
-          </ScrollArea>
-        )}
-      </div>
+        }
+      />
 
       {/* ------------------------------------------------------------------ */}
       {/* Dialogs                                                              */}
@@ -475,6 +484,6 @@ export function CliproxyAiProvidersPage() {
         }}
         onCancel={() => page.setDeleteEntry(null)}
       />
-    </div>
+    </PageShell>
   );
 }

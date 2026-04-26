@@ -6,17 +6,15 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AlertCircle, FolderOpen, RefreshCw, Search } from 'lucide-react';
+import { AlertCircle, RefreshCw, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { SharedItem } from '@/hooks/use-shared';
+import type { ReactNode } from 'react';
 
 interface SharedItemListProps {
-  tabLabel: string;
-  tabId: string;
   items: SharedItem[];
   filteredItems: SharedItem[];
   selectedItem: SharedItem | null;
@@ -28,11 +26,10 @@ interface SharedItemListProps {
   onQueryChange: (q: string) => void;
   onSelectItem: (path: string) => void;
   onRetry: () => void;
+  header?: ReactNode;
 }
 
 export function SharedItemList({
-  tabLabel,
-  tabId,
   items,
   filteredItems,
   selectedItem,
@@ -44,6 +41,7 @@ export function SharedItemList({
   onQueryChange,
   onSelectItem,
   onRetry,
+  header,
 }: SharedItemListProps) {
   const { t } = useTranslation();
   const activeQuery = query.trim();
@@ -52,20 +50,10 @@ export function SharedItemList({
 
   return (
     <div className="flex h-full flex-col bg-muted/30">
-      {/* Pane header */}
-      <div className="border-b bg-background p-4 space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <FolderOpen className="w-4 h-4 text-primary shrink-0" />
-            <h2 className="font-semibold truncate">{tabLabel}</h2>
-          </div>
-          {!isLoading && !isError && (
-            <Badge variant="outline" className="text-[10px] h-5">
-              {filteredItems.length}/{items.length}
-            </Badge>
-          )}
-        </div>
+      {header && <div className="border-b bg-background p-4">{header}</div>}
 
+      {/* Search block */}
+      <div className="border-b bg-background p-4 space-y-3">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input

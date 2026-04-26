@@ -11,15 +11,12 @@
  */
 
 import { type ChangeEvent, useMemo, useRef, useState } from 'react';
-import { Server } from 'lucide-react';
 import { PageShell } from '@/components/page-shell/page-shell';
-import { PageHeader } from '@/components/page-shell/page-header';
 import { ConfigLayout } from '@/components/config-layout/config-layout';
 import { ApiProfileListPane } from '@/components/profiles/api-profile-list-pane';
 import { ApiProfileViewPane } from '@/components/profiles/api-profile-view-pane';
 import { ProfileCreateDialog } from '@/components/profiles/profile-create-dialog';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
-import { Badge } from '@/components/ui/badge';
 import {
   useProfiles,
   useDeleteProfile,
@@ -215,29 +212,12 @@ export function ApiPage() {
   // Render
   // ---------------------------------------------------------------------------
 
-  const configuredCount = profiles.filter((p) => p.configured).length;
-
-  const headerStatus =
-    profiles.length > 0 ? (
-      <Badge variant="secondary" className="text-xs font-normal">
-        {configuredCount}/{profiles.length} configured
-      </Badge>
-    ) : null;
+  // No headerStatus needed; handled in ListPane.header
 
   return (
     <PageShell>
-      <PageHeader
-        title={
-          <span className="flex items-center gap-2">
-            <Server className="h-5 w-5 text-primary" aria-hidden="true" />
-            {t('apiProfiles.sidebarTitle')}
-          </span>
-        }
-        description={t('apiProfiles.sidebarSubtitle')}
-        status={headerStatus}
-      />
-
       <ConfigLayout
+        storageKey="config-layout.api"
         left={
           <ApiProfileListPane
             profiles={profiles}

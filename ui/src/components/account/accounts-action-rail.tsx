@@ -5,7 +5,7 @@
  * quick command snippets. Renders inside a 260px ConfigLayout left aside.
  */
 
-import { AlertTriangle, ArrowRight, Plus, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Plus, Zap, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CopyButton } from '@/components/ui/copy-button';
@@ -39,6 +39,19 @@ export function AccountsActionRail({
 
   return (
     <div className="flex h-full flex-col">
+      {/* Brand strip — replaces the global PageHeader */}
+      <div className="border-b bg-background p-4">
+        <div className="mb-1 flex items-center gap-2">
+          <Users className="size-5 text-primary" />
+          <h1 className="font-semibold">{t('accountsPage.title')}</h1>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t('accountsPage.managePrefix')}
+          <code className="mx-1 rounded bg-muted px-1 py-0.5">ccs auth</code>
+          {t('accountsPage.manageSuffix')}
+        </p>
+      </div>
+
       <ScrollArea className="flex-1">
         <div className="space-y-3 p-4">
           {/* Primary actions */}

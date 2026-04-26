@@ -173,7 +173,7 @@ export function UpdatesPage() {
               </div>
             }
           >
-            <ScrollArea className="h-full max-h-[calc(100vh-22rem)]">
+            <ScrollArea className="h-full">
               <div className="space-y-2">
                 {visibleNotices.length === 0 ? (
                   <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">

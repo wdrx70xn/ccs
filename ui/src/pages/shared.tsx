@@ -11,12 +11,11 @@
 import { useMemo, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, FolderOpen } from 'lucide-react';
 import { useSharedItemContent, useSharedItems, useSharedSummary } from '@/hooks/use-shared';
 import '@/lib/i18n';
 import { useTranslation } from 'react-i18next';
 import { PageShell } from '@/components/page-shell/page-shell';
-import { PageHeader } from '@/components/page-shell/page-header';
 import { ConfigLayout } from '@/components/config-layout/config-layout';
 import {
   SharedTabNav,
@@ -122,67 +121,57 @@ export function SharedPage() {
 
   return (
     <PageShell>
-      {/* ── Header ── */}
-      <PageHeader
-        title={t('sharedPage.title')}
-        description={
-          <div className="mt-2 space-y-2">
-            <p className="text-sm text-muted-foreground">{t('sharedPage.subtitle')}</p>
-
-            {/* Tab nav + metrics */}
-            <SharedTabNav
-              tab={tab}
-              summary={summary}
-              allItemsCount={allItems.length}
-              filteredItemsCount={filteredItems.length}
-              activeQuery={activeQuery}
-              onTabChange={handleTabChange}
-            />
-
-            {/* Symlink warning */}
-            {summary && !summary.symlinkStatus.valid && (
-              <Alert variant="warning">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>{t('sharedPage.configurationRequired')}</AlertTitle>
-                <AlertDescription>
-                  {/* TODO i18n: missing key for "Run `ccs sync` to configure." */}
-                  {summary.symlinkStatus.message}. Run `ccs sync` to configure.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Summary error (non-blocking) */}
-            {isSummaryError && (
-              <Alert variant="info">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>{t('sharedPage.countsUnavailable')}</AlertTitle>
-                <AlertDescription>
-                  <p>{summaryErrorMessage}</p>
-                  <div className="mt-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        void refetchSummary();
-                      }}
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      {t('sharedPage.retryCounts')}
-                    </Button>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-        }
-      />
-
       {/* ── Body: left list + right viewer ── */}
       <ConfigLayout
+        storageKey="config-layout.shared"
         left={
           <SharedItemList
-            tabLabel={t(`sharedPage.${tab}`)}
-            tabId={tab}
+            header={
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <FolderOpen className="size-5 text-primary" />
+                    <h1 className="font-semibold">{t('sharedPage.title')}</h1>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t('sharedPage.subtitle')}</p>
+                </div>
+
+                <SharedTabNav
+                  tab={tab}
+                  summary={summary}
+                  allItemsCount={allItems.length}
+                  filteredItemsCount={filteredItems.length}
+                  activeQuery={activeQuery}
+                  onTabChange={handleTabChange}
+                />
+
+                {summary && !summary.symlinkStatus.valid && (
+                  <Alert variant="warning">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>{t('sharedPage.configurationRequired')}</AlertTitle>
+                    <AlertDescription>
+                      {summary.symlinkStatus.message}. Run `ccs sync` to configure.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {isSummaryError && (
+                  <Alert variant="info">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>{t('sharedPage.countsUnavailable')}</AlertTitle>
+                    <AlertDescription>
+                      <p>{summaryErrorMessage}</p>
+                      <div className="mt-3">
+                        <Button size="sm" variant="outline" onClick={() => void refetchSummary()}>
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          {t('sharedPage.retryCounts')}
+                        </Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            }
             items={allItems}
             filteredItems={filteredItems}
             selectedItem={selectedItem}
