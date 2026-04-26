@@ -187,10 +187,12 @@ describe('ApiPage — design system shell', () => {
     hookState.isError = false;
   });
 
-  it('renders PageHeader with title', () => {
+  it('renders rail-anchored title (no PageHeader stacked above ConfigLayout)', () => {
+    // §0b/§4a — identity lives inside ListPane.header, not in a banner above
+    // ConfigLayout. We assert that at least one heading renders rather than
+    // role=banner (which the removed PageHeader exposed).
     render(<ApiPage />);
-    // The title includes "Profiles" from the i18n key apiProfiles.sidebarTitle
-    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading').length).toBeGreaterThan(0);
   });
 
   it('renders profile list items for each profile', () => {
