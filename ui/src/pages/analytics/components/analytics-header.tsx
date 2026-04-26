@@ -1,68 +1,82 @@
 /**
- * Analytics Controls Component
+ * Analytics Header Component
  *
- * Date filter, 24H toggle, refresh, and last-updated text.
- * Exported as AnalyticsControls (slim) for use in PageHeader.actions slot.
- * The h1/subtitle have moved to PageHeader; this component is controls-only.
+ * Title, date filter, 24H button, and refresh controls.
  */
 
-import type { ReactNode } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { subDays, startOfMonth } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { DateRangeFilter } from '@/components/analytics/date-range-filter';
+import { RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-interface AnalyticsControlsProps {
+interface AnalyticsHeaderProps {
   dateRange: DateRange | undefined;
   onDateRangeChange: (range: DateRange | undefined) => void;
   onTodayClick: () => void;
-  viewMode: 'daily' | 'hourly';
+  onRefresh: () => void;
+  isRefreshing: boolean;
   lastUpdatedText: string | null;
-  /** Refresh button node — passed from parent so controls stay pure. */
-  refreshButton: ReactNode;
+  viewMode: 'daily' | 'hourly';
 }
 
-export function AnalyticsControls({
+export function AnalyticsHeader({
   dateRange,
   onDateRangeChange,
   onTodayClick,
-  viewMode,
+  onRefresh,
+  isRefreshing,
   lastUpdatedText,
-  refreshButton,
-}: AnalyticsControlsProps) {
+  viewMode,
+}: AnalyticsHeaderProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button
-        variant={viewMode === 'hourly' ? 'default' : 'outline'}
-        size="sm"
-        className="h-8"
-        onClick={onTodayClick}
-      >
-        24H
-      </Button>
-      <DateRangeFilter
-        className="flex-wrap"
-        value={dateRange}
-        onChange={onDateRangeChange}
-        presets={[
-          { label: '7D', range: { from: subDays(new Date(), 7), to: new Date() } },
-          { label: '30D', range: { from: subDays(new Date(), 30), to: new Date() } },
-          {
-            label: t('analytics.month'),
-            range: { from: startOfMonth(new Date()), to: new Date() },
-          },
-          { label: t('analytics.allTime'), range: { from: undefined, to: new Date() } },
-        ]}
-      />
-      {lastUpdatedText && (
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
-          {t('analytics.updated', { value: lastUpdatedText })}
-        </span>
-      )}
-      {refreshButton}
+    <div className="flex flex-col gap-3 shrink-0 xl:flex-row xl:items-center xl:justify-between">
+      <div>
+        <h1 className="text-xl font-semibold">{t('analytics.title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('analytics.subtitle')}</p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+        <Button
+          variant={viewMode === 'hourly' ? 'default' : 'outline'}
+          size="sm"
+          className="h-8"
+          onClick={onTodayClick}
+        >
+          24H
+        </Button>
+        <DateRangeFilter
+          className="flex-wrap"
+          value={dateRange}
+          onChange={onDateRangeChange}
+          presets={[
+            { label: '7D', range: { from: subDays(new Date(), 7), to: new Date() } },
+            { label: '30D', range: { from: subDays(new Date(), 30), to: new Date() } },
+            {
+              label: t('analytics.month'),
+              range: { from: startOfMonth(new Date()), to: new Date() },
+            },
+            { label: t('analytics.allTime'), range: { from: undefined, to: new Date() } },
+          ]}
+        />
+
+        {lastUpdatedText && (
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {t('analytics.updated', { value: lastUpdatedText })}
+          </span>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 h-8"
+          onClick={onRefresh}
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
+      </div>
     </div>
   );
 }
