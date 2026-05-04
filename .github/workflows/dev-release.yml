@@ -1,184 +1,128 @@
 name: Dev Release
-
-on:
+'on':
   push:
-    branches: [dev]
-  workflow_dispatch:
-
+    branches:
+    - dev
+  workflow_dispatch: null
 concurrency:
   group: dev-release-${{ github.ref }}
   cancel-in-progress: false
-
 jobs:
   guard:
     if: ${{ github.ref == 'refs/heads/dev' }}
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
     outputs:
       should_release: ${{ steps.release-guard.outputs.should_release }}
-
     steps:
-      - name: Check release recursion guard
-        id: release-guard
-        shell: bash
-        run: |
-          SHOULD_RELEASE=true
-          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-            HEAD_SUBJECT=$(jq -r '.head_commit.message // "" | split("\n")[0]' "$GITHUB_EVENT_PATH")
-            case "$HEAD_SUBJECT" in
-              "chore(release): "*)
-                SHOULD_RELEASE=false
-                echo "Skipping generated dev release commit: $HEAD_SUBJECT"
-                ;;
-            esac
-          fi
-          echo "should_release=$SHOULD_RELEASE" >> "$GITHUB_OUTPUT"
-
+    - name: Check release recursion guard
+      id: release-guard
+      shell: bash
+      run: "SHOULD_RELEASE=true\nif [[ \"$GITHUB_EVENT_NAME\" == \"push\" ]]; then\n\
+        \  HEAD_SUBJECT=$(jq -r '.head_commit.message // \"\" | split(\"\\n\")[0]'\
+        \ \"$GITHUB_EVENT_PATH\")\n  case \"$HEAD_SUBJECT\" in\n    \"chore(release):\
+        \ \"*)\n      SHOULD_RELEASE=false\n      echo \"Skipping generated dev release\
+        \ commit: $HEAD_SUBJECT\"\n      ;;\n  esac\nfi\necho \"should_release=$SHOULD_RELEASE\"\
+        \ >> \"$GITHUB_OUTPUT\"\n"
   release:
     needs: guard
     if: ${{ needs.guard.outputs.should_release == 'true' }}
-    runs-on: [self-hosted, linux, x64]
-
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
       pull-requests: write
       id-token: write
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: dev
-          # PAT_TOKEN required: dev-release pushes version bump commits to dev,
-          # and protected branches reject github.token writes once status checks are required.
-          token: ${{ secrets.PAT_TOKEN }}
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: dev
+        token: ${{ secrets.PAT_TOKEN }}
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: 1.3.9
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        registry-url: https://registry.npmjs.org
+    - name: Install dependencies
+      run: bash scripts/ensure-deps.sh
+    - name: Build
+      run: bun run build:all
+    - name: Validate fast gate
+      run: bun run validate
+    - name: Test slow bucket
+      run: bun run test:slow
+    - name: Test CLI e2e
+      env:
+        CCS_E2E_SKIP_BUILD: '1'
+      run: bun run test:e2e
+    - name: Release
+      id: release
+      env:
+        HUSKY: 0
+        GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+        GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: '# Use custom dev release script instead of semantic-release
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: '1.3.9'
+        # This ensures dev versions follow {stable}-dev.{N} pattern
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
+        chmod +x scripts/dev-release.sh
 
-      - name: Install dependencies
-        run: bash scripts/ensure-deps.sh
+        ./scripts/dev-release.sh
 
-      - name: Build
-        run: bun run build:all
-
-      - name: Validate fast gate
-        run: bun run validate
-
-      - name: Test slow bucket
-        run: bun run test:slow
-
-      - name: Test CLI e2e
-        env:
-          CCS_E2E_SKIP_BUILD: '1'
-        run: bun run test:e2e
-
-      - name: Release
-        id: release
-        env:
-          HUSKY: 0
-          # PAT_TOKEN bypasses branch protection so the workflow can push
-          # the dev release commit and tag back to the protected dev branch.
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          # Use custom dev release script instead of semantic-release
-          # This ensures dev versions follow {stable}-dev.{N} pattern
-          chmod +x scripts/dev-release.sh
-          ./scripts/dev-release.sh
-
-      - name: Notify Discord
-        if: success() && steps.release.outputs.released == 'true'
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: |
-          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
-            echo "DISCORD_WEBHOOK_URL not set, skipping"
-            exit 0
-          fi
-          node scripts/send-discord-release.cjs dev "$DISCORD_WEBHOOK_URL"
-
-      - name: Tag resolved issues
-        if: success() && steps.release.outputs.released == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PREVIOUS_DEV_TAG: ${{ steps.release.outputs.previous_dev_tag }}
-          STABLE_TAG: ${{ steps.release.outputs.stable_tag }}
-        run: |
-          # Get version from package.json
-          VERSION=$(jq -r '.version' package.json)
-
-          # Get commits ONLY since last dev tag (not all release commits)
-          # This prevents re-tagging issues from older releases
-          if [[ -n "$PREVIOUS_DEV_TAG" ]]; then
-            # Commits between last dev tag and current (excluding release commit)
-            RANGE="${PREVIOUS_DEV_TAG}..HEAD~1"
-          else
-            # First dev release - check commits since last stable tag
-            RANGE="${STABLE_TAG:-HEAD~10}..HEAD~1"
-          fi
-
-          echo "Checking commits in range: $RANGE"
-
-          COMMIT_TEXT=$(git log $RANGE --pretty=format:"%s%n%b" 2>/dev/null || true)
-          ISSUES_FROM_COMMITS=$(printf '%s\n' "$COMMIT_TEXT" | \
-            perl -ne 'if (/(fixes|closes|resolves|refs?)(.*)/i) { print "$2\n"; }' | \
-            grep -oE '#[0-9]+' || true)
-
-          PR_CANDIDATES=$(printf '%s\n' "$COMMIT_TEXT" | \
-            grep -oE "Merge pull request #[0-9]+|\\(#[0-9]+\\)" | \
-            grep -oE "[0-9]+" | sort -u || true)
-
-          PR_TEXT=""
-          for PR_NUM in $PR_CANDIDATES; do
-            DETAILS=$(gh pr view "$PR_NUM" --repo "${{ github.repository }}" --json title,body --jq '.title + "\n" + (.body // "")' 2>/dev/null || true)
-            if [[ -n "$DETAILS" ]]; then
-              PR_TEXT="${PR_TEXT}"$'\n'"${DETAILS}"
-            fi
-          done
-
-          ISSUES_FROM_PRS=$(printf '%s\n' "$PR_TEXT" | \
-            perl -ne 'if (/(fixes|closes|resolves|refs?)(.*)/i) { print "$2\n"; }' | \
-            grep -oE '#[0-9]+' || true)
-
-          ISSUES=$(printf '%s\n%s\n' "$ISSUES_FROM_COMMITS" "$ISSUES_FROM_PRS" | \
-            grep -oE "#[0-9]+" | sort -u || true)
-
-          if [[ -z "$ISSUES" ]]; then
-            echo "No linked issues found in range"
-            exit 0
-          fi
-
-          # Create label if needed
-          gh label create "released-dev" \
-            --color "1d76db" \
-            --description "Fix available in @dev npm channel" \
-            --repo ${{ github.repository }} 2>/dev/null || true
-
-          for ISSUE in $ISSUES; do
-            NUM=${ISSUE#\#}
-
-            # Skip if already has ANY release label (prevents duplicate comments)
-            RELEASE_LABELS=$(gh issue view "$NUM" --repo "${{ github.repository }}" --json labels --jq '[.labels[].name | select(startswith("released"))] | length' 2>/dev/null || echo "0")
-            if [[ "$RELEASE_LABELS" -gt 0 ]]; then
-              echo "Issue #$NUM already released, skipping"
-              continue
-            fi
-
-            echo "Tagging issue #$NUM"
-            # Remove pending-release (transition), add released-dev
-            gh issue edit "$NUM" --remove-label "pending-release" --add-label "released-dev" --repo "${{ github.repository }}" 2>/dev/null || \
-              gh issue edit "$NUM" --add-label "released-dev" --repo "${{ github.repository }}" || true
-            gh issue comment "$NUM" --repo "${{ github.repository }}" --body "[bot] Available in \`$VERSION\`. Install: \`ccs update --dev\`" || true
-          done
+        '
+    - name: Notify Discord
+      if: success() && steps.release.outputs.released == 'true'
+      env:
+        DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      run: "if [ -z \"$DISCORD_WEBHOOK_URL\" ]; then\n  echo \"DISCORD_WEBHOOK_URL\
+        \ not set, skipping\"\n  exit 0\nfi\nnode scripts/send-discord-release.cjs\
+        \ dev \"$DISCORD_WEBHOOK_URL\"\n"
+    - name: Tag resolved issues
+      if: success() && steps.release.outputs.released == 'true'
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PREVIOUS_DEV_TAG: ${{ steps.release.outputs.previous_dev_tag }}
+        STABLE_TAG: ${{ steps.release.outputs.stable_tag }}
+      run: "# Get version from package.json\nVERSION=$(jq -r '.version' package.json)\n\
+        \n# Get commits ONLY since last dev tag (not all release commits)\n# This\
+        \ prevents re-tagging issues from older releases\nif [[ -n \"$PREVIOUS_DEV_TAG\"\
+        \ ]]; then\n  # Commits between last dev tag and current (excluding release\
+        \ commit)\n  RANGE=\"${PREVIOUS_DEV_TAG}..HEAD~1\"\nelse\n  # First dev release\
+        \ - check commits since last stable tag\n  RANGE=\"${STABLE_TAG:-HEAD~10}..HEAD~1\"\
+        \nfi\n\necho \"Checking commits in range: $RANGE\"\n\nCOMMIT_TEXT=$(git log\
+        \ $RANGE --pretty=format:\"%s%n%b\" 2>/dev/null || true)\nISSUES_FROM_COMMITS=$(printf\
+        \ '%s\\n' \"$COMMIT_TEXT\" | \\\n  perl -ne 'if (/(fixes|closes|resolves|refs?)(.*)/i)\
+        \ { print \"$2\\n\"; }' | \\\n  grep -oE '#[0-9]+' || true)\n\nPR_CANDIDATES=$(printf\
+        \ '%s\\n' \"$COMMIT_TEXT\" | \\\n  grep -oE \"Merge pull request #[0-9]+|\\\
+        \\(#[0-9]+\\\\)\" | \\\n  grep -oE \"[0-9]+\" | sort -u || true)\n\nPR_TEXT=\"\
+        \"\nfor PR_NUM in $PR_CANDIDATES; do\n  DETAILS=$(gh pr view \"$PR_NUM\" --repo\
+        \ \"${{ github.repository }}\" --json title,body --jq '.title + \"\\n\" +\
+        \ (.body // \"\")' 2>/dev/null || true)\n  if [[ -n \"$DETAILS\" ]]; then\n\
+        \    PR_TEXT=\"${PR_TEXT}\"$'\\n'\"${DETAILS}\"\n  fi\ndone\n\nISSUES_FROM_PRS=$(printf\
+        \ '%s\\n' \"$PR_TEXT\" | \\\n  perl -ne 'if (/(fixes|closes|resolves|refs?)(.*)/i)\
+        \ { print \"$2\\n\"; }' | \\\n  grep -oE '#[0-9]+' || true)\n\nISSUES=$(printf\
+        \ '%s\\n%s\\n' \"$ISSUES_FROM_COMMITS\" \"$ISSUES_FROM_PRS\" | \\\n  grep\
+        \ -oE \"#[0-9]+\" | sort -u || true)\n\nif [[ -z \"$ISSUES\" ]]; then\n  echo\
+        \ \"No linked issues found in range\"\n  exit 0\nfi\n\n# Create label if needed\n\
+        gh label create \"released-dev\" \\\n  --color \"1d76db\" \\\n  --description\
+        \ \"Fix available in @dev npm channel\" \\\n  --repo ${{ github.repository\
+        \ }} 2>/dev/null || true\n\nfor ISSUE in $ISSUES; do\n  NUM=${ISSUE#\\#}\n\
+        \n  # Skip if already has ANY release label (prevents duplicate comments)\n\
+        \  RELEASE_LABELS=$(gh issue view \"$NUM\" --repo \"${{ github.repository\
+        \ }}\" --json labels --jq '[.labels[].name | select(startswith(\"released\"\
+        ))] | length' 2>/dev/null || echo \"0\")\n  if [[ \"$RELEASE_LABELS\" -gt\
+        \ 0 ]]; then\n    echo \"Issue #$NUM already released, skipping\"\n    continue\n\
+        \  fi\n\n  echo \"Tagging issue #$NUM\"\n  # Remove pending-release (transition),\
+        \ add released-dev\n  gh issue edit \"$NUM\" --remove-label \"pending-release\"\
+        \ --add-label \"released-dev\" --repo \"${{ github.repository }}\" 2>/dev/null\
+        \ || \\\n    gh issue edit \"$NUM\" --add-label \"released-dev\" --repo \"\
+        ${{ github.repository }}\" || true\n  gh issue comment \"$NUM\" --repo \"\
+        ${{ github.repository }}\" --body \"[bot] Available in \\`$VERSION\\`. Install:\
+        \ \\`ccs update --dev\\`\" || true\ndone\n"
